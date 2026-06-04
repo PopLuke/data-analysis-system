@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}数据可视化 - 数据分析系统{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+    <h2 class="fw-bold">数据可视化</h2>
+    <p class="text-muted mb-0">这里将通过 ECharts 动态生成柱状图、折线图、饼图和散点图。</p>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-semibold">图表配置</div>
+            <div class="card-body">
+                <form id="chartForm">
+                    <div class="mb-3">
+                        <label for="chartType" class="form-label">图表类型</label>
+                        <select class="form-select" id="chartType" name="chart_type" disabled>
+                            <option value="bar">柱状图</option>
+                            <option value="line">折线图</option>
+                            <option value="pie">饼图</option>
+                            <option value="scatter">散点图</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="xColumn" class="form-label">X 轴 / 分类字段</label>
+                        <select class="form-select" id="xColumn" name="x_column" disabled>
+                            <option>等待数据加载</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="yColumn" class="form-label">Y 轴 / 数值字段</label>
+                        <select class="form-select" id="yColumn" name="y_column" disabled>
+                            <option>等待数据加载</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-primary w-100" disabled>生成图表</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-semibold">图表展示</div>
+            <div class="card-body">
+                <div id="chartContainer" class="chart-placeholder d-flex align-items-center justify-content-center">
+                    <div class="text-center text-muted">
+                        <h5>暂无图表</h5>
+                        <p class="mb-0">可视化接口接入后，将在这里渲染交互式图表。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

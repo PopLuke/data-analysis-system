@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}数据分析 - 数据分析系统{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+    <h2 class="fw-bold">数据分析</h2>
+    <p class="text-muted mb-0">这里将支持 K-Means 聚类分析和线性回归预测等机器学习功能。</p>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-semibold">分析配置</div>
+            <div class="card-body">
+                <form>
+                    <div class="mb-3">
+                        <label class="form-label">分析方法</label>
+                        <select class="form-select" disabled>
+                            <option>K-Means 聚类</option>
+                            <option>线性回归预测</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">选择数值字段</label>
+                        <select class="form-select" disabled>
+                            <option>等待数据加载</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">聚类数量 K</label>
+                        <input type="number" class="form-control" value="3" min="2" disabled>
+                    </div>
+                    <button type="button" class="btn btn-primary w-100" disabled>开始分析</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white fw-semibold">分析结果</div>
+            <div class="card-body">
+                <div class="empty-state text-center py-5">
+                    <h5>暂无分析结果</h5>
+                    <p class="text-muted mb-0">分析模块接入后，将在这里展示聚类标签、模型指标和结果图表。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

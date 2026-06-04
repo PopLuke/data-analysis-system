@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}数据清洗 - 数据分析系统{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+    <h2 class="fw-bold">数据清洗</h2>
+    <p class="text-muted mb-0">这里将提供缺失值统计、缺失值处理和异常值检测功能。</p>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white fw-semibold">缺失值处理</div>
+            <div class="card-body">
+                <p class="text-muted">数据清洗模块完成后，将显示每列缺失值数量，并支持选择处理策略。</p>
+                <form>
+                    <div class="mb-3">
+                        <label class="form-label">处理方式</label>
+                        <select class="form-select" disabled>
+                            <option>删除含缺失值的行</option>
+                            <option>数值列用均值填充</option>
+                            <option>数值列用中位数填充</option>
+                            <option>用众数填充</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-primary" disabled>执行清洗</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white fw-semibold">异常值检测</div>
+            <div class="card-body">
+                <p class="text-muted">后续将通过 IQR 四分位距方法检测指定数值列的异常值。</p>
+                <form>
+                    <div class="mb-3">
+                        <label class="form-label">选择数值列</label>
+                        <select class="form-select" disabled>
+                            <option>等待数据加载</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-outline-primary" disabled>检测异常值</button>
+                    <button type="button" class="btn btn-outline-danger ms-2" disabled>删除异常值</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mt-4">
+    <div class="card-header bg-white fw-semibold">清洗结果</div>
+    <div class="card-body">
+        <div class="empty-state text-center py-4">
+            <h5>暂无清洗结果</h5>
+            <p class="text-muted mb-0">清洗功能接入后，将在这里展示清洗前后数据变化。</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
