@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}数据预览 - 数据分析系统{% endblock %}
+
+{% block content %}
+<div class="page-header mb-4">
+    <h2 class="fw-bold">数据预览</h2>
+    <p class="text-muted mb-0">上传数据后，这里将展示数据基本信息、字段列表和前 20 行预览。</p>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card dashboard-card">
+            <div class="card-body">
+                <h6 class="text-muted">总行数</h6>
+                <p class="display-6 mb-0">--</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card dashboard-card">
+            <div class="card-body">
+                <h6 class="text-muted">总列数</h6>
+                <p class="display-6 mb-0">--</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card dashboard-card">
+            <div class="card-body">
+                <h6 class="text-muted">当前文件</h6>
+                <p class="mb-0 text-truncate">等待上传</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">数据表格预览</span>
+        <a href="{{ url_for('clean') }}" class="btn btn-sm btn-primary">进入数据清洗</a>
+    </div>
+    <div class="card-body">
+        <div class="empty-state text-center py-5">
+            <h5>暂无预览数据</h5>
+            <p class="text-muted">数据管理模块完成后，将在这里展示上传文件的前 20 行。</p>
+            <a href="{{ url_for('upload') }}" class="btn btn-outline-primary">返回上传页面</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
