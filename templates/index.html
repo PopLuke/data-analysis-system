@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - 数据分析系统{% endblock %}
+
+{% block content %}
+<section class="hero-section p-5 mb-4 rounded-4 text-white">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1 class="display-5 fw-bold">交互式数据分析与可视化系统</h1>
+            <p class="fs-5 mt-3 mb-4">
+                本系统支持 CSV/Excel 数据上传、数据预览、数据清洗、可视化分析和机器学习分析，适合作为小组数据分析课程项目的基础框架。
+            </p>
+            <a class="btn btn-light btn-lg text-primary fw-semibold" href="{{ url_for('upload') }}">开始上传数据</a>
+        </div>
+    </div>
+</section>
+
+<section class="row g-4">
+    <div class="col-md-6 col-lg-3">
+        <div class="card feature-card">
+            <div class="card-body">
+                <h5 class="card-title">数据管理</h5>
+                <p class="card-text">上传、预览和导出 CSV/Excel 数据。</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card feature-card">
+            <div class="card-body">
+                <h5 class="card-title">数据清洗</h5>
+                <p class="card-text">处理缺失值并检测异常值。</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card feature-card">
+            <div class="card-body">
+                <h5 class="card-title">可视化分析</h5>
+                <p class="card-text">生成柱状图、折线图、饼图和散点图。</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card feature-card">
+            <div class="card-body">
+                <h5 class="card-title">机器学习</h5>
+                <p class="card-text">支持 K-Means 聚类和回归预测扩展。</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

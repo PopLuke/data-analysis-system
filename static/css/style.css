@@ -1,0 +1,26 @@
+body {
+    min-height: 100vh;
+    background-color: #f8f9fa;
+}
+
+.hero-section {
+    background: linear-gradient(135deg, #0d6efd 0%, #5b8def 50%, #7c3aed 100%);
+    box-shadow: 0 1rem 2rem rgba(13, 110, 253, 0.18);
+}
+
+.feature-card {
+    height: 100%;
+    border: 0;
+    border-radius: 1rem;
+    box-shadow: 0 0.75rem 1.5rem rgba(15, 23, 42, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 1rem 2rem rgba(15, 23, 42, 0.12);
+}
+
+.card-title {
+    font-weight: 700;
+}
