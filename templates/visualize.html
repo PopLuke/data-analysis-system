@@ -5,7 +5,7 @@
 {% block content %}
 <div class="page-header mb-4">
     <h2 class="fw-bold">数据可视化</h2>
-    <p class="text-muted mb-0">这里将通过 ECharts 动态生成柱状图、折线图、饼图和散点图。</p>
+    <p class="text-muted mb-0">选择图表类型和字段后，图表会通过后端接口生成。</p>
 </div>
 
 <div class="row g-4">
@@ -13,46 +13,85 @@
         <div class="card shadow-sm">
             <div class="card-header bg-white fw-semibold">图表配置</div>
             <div class="card-body">
-                <form id="chartForm">
-                    <div class="mb-3">
-                        <label for="chartType" class="form-label">图表类型</label>
-                        <select class="form-select" id="chartType" name="chart_type" disabled>
-                            <option value="bar">柱状图</option>
-                            <option value="line">折线图</option>
-                            <option value="pie">饼图</option>
-                            <option value="scatter">散点图</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="xColumn" class="form-label">X 轴 / 分类字段</label>
-                        <select class="form-select" id="xColumn" name="x_column" disabled>
-                            <option>等待数据加载</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="yColumn" class="form-label">Y 轴 / 数值字段</label>
-                        <select class="form-select" id="yColumn" name="y_column" disabled>
-                            <option>等待数据加载</option>
-                        </select>
-                    </div>
-                    <button type="button" class="btn btn-primary w-100" disabled>生成图表</button>
-                </form>
+                <div class="mb-3">
+                    <label class="form-label">图表类型</label>
+                    <select id="chartType" class="form-select">
+                        <option value="bar">柱状图</option>
+                        <option value="line">折线图</option>
+                        <option value="pie">饼图</option>
+                        <option value="scatter">散点图</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">X 轴字段</label>
+                    <select id="xCol" class="form-select">
+                        {% for col in all_cols %}
+                        <option value="{{ col }}">{{ col }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Y 轴字段</label>
+                    <select id="yCol" class="form-select">
+                        {% for col in numeric_cols %}
+                        <option value="{{ col }}">{{ col }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button id="drawChart" class="btn btn-primary w-100">生成图表</button>
             </div>
         </div>
     </div>
 
     <div class="col-lg-8">
-        <div class="card shadow-sm">
+        <div class="card shadow-sm h-100">
             <div class="card-header bg-white fw-semibold">图表展示</div>
             <div class="card-body">
-                <div id="chartContainer" class="chart-placeholder d-flex align-items-center justify-content-center">
-                    <div class="text-center text-muted">
-                        <h5>暂无图表</h5>
-                        <p class="mb-0">可视化接口接入后，将在这里渲染交互式图表。</p>
-                    </div>
-                </div>
+                <div id="chartBox" style="height: 460px;"></div>
+                <div class="empty-state text-center py-4 text-muted" id="chartTips">点击生成图表后这里会显示结果。</div>
             </div>
         </div>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<script>
+    const chart = echarts.init(document.getElementById('chartBox'));
+    document.getElementById('drawChart').addEventListener('click', async () => {
+        const chartType = document.getElementById('chartType').value;
+        const xCol = document.getElementById('xCol').value;
+        const yCol = document.getElementById('yCol').value;
+        const resp = await fetch('{{ url_for('chart_data') }}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({chart_type: chartType, x_col: xCol, y_col: yCol})
+        });
+        const data = await resp.json();
+        document.getElementById('chartTips').style.display = 'none';
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+        if (chartType === 'pie') {
+            chart.setOption({
+                tooltip: {trigger: 'item'},
+                series: [{type: 'pie', data: data.data}]
+            });
+        } else if (chartType === 'scatter') {
+            chart.setOption({
+                tooltip: {},
+                xAxis: {},
+                yAxis: {},
+                series: [{type: 'scatter', data: data.data}]
+            });
+        } else {
+            chart.setOption({
+                tooltip: {},
+                xAxis: {type: 'category', data: data.x},
+                yAxis: {type: 'value'},
+                series: [{type: chartType, data: data.y}]
+            });
+        }
+    });
+</script>
 {% endblock %}
