@@ -23,13 +23,24 @@
                 <a class="nav-link" href="{{ url_for('clean') }}">数据清洗</a>
                 <a class="nav-link" href="{{ url_for('visualize') }}">数据可视化</a>
                 <a class="nav-link" href="{{ url_for('analyze') }}">数据分析</a>
-                <a class="nav-link" href="{{ url_for('export') }}">结果导出</a>
+                <a class="nav-link" href="{{ url_for('export_data') }}">结果导出</a>
             </div>
         </div>
     </div>
 </nav>
 
 <main class="container py-4">
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                {% for message in messages %}
+                    <div>{{ message }}</div>
+                {% endfor %}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="关闭"></button>
+            </div>
+        {% endif %}
+    {% endwith %}
+
     {% block content %}{% endblock %}
 </main>
 
