@@ -35,6 +35,20 @@ data-analysis-system/
 ├── uploads/
 ├── outputs/
 ├── static/
+│   ├── css/style.css
+│   └── js/chart.js
 ├── templates/
+│   ├── base.html
+│   ├── index.html
+│   ├── upload.html
+│   ├── analysis.html
+│   ├── clean.html
+│   ├── data_manager.html
+│   ├── export.html
+│   ├── visualize.html
+│   └── preview.html
 └── utils/
+	├── cleaner.py
+	├── data_loader.py
+	└── analyzer.py
 ```

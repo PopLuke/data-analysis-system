@@ -106,6 +106,7 @@ def preview():
         flash("请先上传数据")
         return redirect(url_for("data_manager"))
 
+
     return render_template(
         "preview.html",
         filename=Path(session.get("cleaned_file") or session.get("current_file", "")).name,
@@ -172,6 +173,7 @@ def visualize():
     return render_template("visualize.html", numeric_cols=numeric_cols, all_cols=all_cols)
 
 
+
 @app.route("/api/chart-data", methods=["POST"])
 def chart_data():
     df = _get_current_df()
@@ -193,7 +195,6 @@ def chart_data():
         return {"data": points}
     return {"error": "unsupported chart type"}, 400
 
-
 @app.route("/analyze", methods=["GET", "POST"])
 def analyze():
     df = _get_current_df()
@@ -201,8 +202,12 @@ def analyze():
         flash("请先上传数据")
         return redirect(url_for("data_manager"))
 
-    result = None
+
+    result = None        # HTML string for kmeans
+    result_data = None   # dict for regression / classification / pca
     method = request.form.get("method") if request.method == "POST" else None
+
+
     if request.method == "POST":
         try:
             if method == "kmeans":
@@ -211,34 +216,92 @@ def analyze():
                     flash("请至少选择一个数值字段")
                 else:
                     k = int(request.form.get("k", 3))
-                    result = run_kmeans(df, cols, k).head(50).to_html(classes="table table-striped table-bordered table-hover", index=False)
+
+                    km_df = run_kmeans(df, cols, k).head(50)
+                    result = km_df.to_html(
+                        classes="table table-striped table-bordered table-hover",
+                        index=False,
+                    )
                     flash("K-Means 分析已执行")
+
             elif method == "regression":
                 target = request.form.get("target")
                 features = request.form.getlist("features")
                 if not target or not features:
                     flash("回归分析需要选择目标字段和特征字段")
                 else:
-                    result = str(run_regression(df, target, features))
+
+                    raw = run_regression(df, target, features)
+                    result_data = {
+                        "type": "regression",
+                        "metrics": raw["metrics"],
+                        "coef": raw["coef"],
+                        "intercept": raw["intercept"],
+                        "predictions_html": raw["predictions"].to_html(
+                            classes="table table-striped table-bordered table-hover",
+                            index=False,
+                        ),
+                    }
                     flash("回归分析已执行")
+
+
             elif method == "classification":
                 target = request.form.get("target")
                 features = request.form.getlist("features")
                 if not target or not features:
                     flash("分类分析需要选择目标字段和特征字段")
                 else:
-                    result = str(run_classification(df, target, features))
+
+                    raw = run_classification(df, target, features)
+                    result_data = {
+                        "type": "classification",
+                        "metrics": raw["metrics"],
+                        "report_html": raw["report_df"].to_html(
+                            classes="table table-striped table-bordered table-hover"
+                        ),
+                        "feature_importance": raw["feature_importance"],
+                        "predictions_html": raw["predictions"].to_html(
+                            classes="table table-striped table-bordered table-hover",
+                            index=False,
+                        ),
+                    }
                     flash("分类分析已执行")
+
             elif method == "pca":
-                result = str(run_pca(df))
+                raw = run_pca(df)
+                result_data = {
+                    "type": "pca",
+                    "n_components": raw["n_components"],
+                    "variance_ratio": raw["variance_ratio"],
+                    "cumulative": raw["cumulative"],
+                    "components_html": raw["components_df"].to_html(
+                        classes="table table-striped table-bordered table-hover"
+                    ),
+                    "transformed_html": raw["transformed_df"].to_html(
+                        classes="table table-striped table-bordered table-hover",
+                        index=False,
+                    ),
+                }
                 flash("PCA 分析已执行")
+
             else:
                 flash("请选择有效的分析方法")
+
+
         except Exception as exc:
             flash(f"分析失败：{exc}")
 
     numeric_cols = list(df.select_dtypes(include="number").columns)
-    return render_template("analysis.html", numeric_cols=numeric_cols, result=result)
+
+    all_cols = list(df.columns)
+    return render_template(
+        "analysis.html",
+        numeric_cols=numeric_cols,
+        all_cols=all_cols,
+        result=result,
+        result_data=result_data,
+        selected_method=method,
+    )
 
 
 @app.route("/export")
