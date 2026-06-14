@@ -289,7 +289,7 @@ def analyze():
 
 
         except Exception as exc:
-            flash(f"分析失败：{exc}")
+            flash(f"分析失败：{str(exc)[:71]}")
 
     numeric_cols = list(df.select_dtypes(include="number").columns)
 
