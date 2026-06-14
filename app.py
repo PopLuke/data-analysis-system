@@ -181,16 +181,36 @@ def chart_data():
     chart_type = request.json.get("chart_type")
     x_col = request.json.get("x_col")
     y_col = request.json.get("y_col")
+    agg_method = request.json.get("agg_method", "sum")
+
+    def _aggregate(df, x_col, y_col, method):
+        grouped = df[[x_col, y_col]].dropna().groupby(x_col, as_index=False)
+        if method == "mean":
+            return grouped.mean(numeric_only=True)
+        elif method == "count":
+            return grouped.count(numeric_only=True)
+        else:
+            return grouped.sum(numeric_only=True)
 
     if chart_type in {"bar", "line"}:
-        grouped = df[[x_col, y_col]].dropna().groupby(x_col, as_index=False).sum(numeric_only=True)
-        return {"x": grouped[x_col].astype(str).tolist(), "y": grouped[y_col].tolist(), "chart_type": chart_type}
+        grouped = _aggregate(df, x_col, y_col, agg_method)
+        result = {
+            "x": grouped[x_col].astype(str).tolist(),
+            "y": grouped[y_col].tolist(),
+            "chart_type": chart_type,
+            "data_count": len(grouped),
+        }
+        return result
     if chart_type == "pie":
-        grouped = df[[x_col, y_col]].dropna().groupby(x_col, as_index=False).sum(numeric_only=True)
-        return {"data": [{"name": str(r[x_col]), "value": float(r[y_col])} for _, r in grouped.iterrows()]}
+        grouped = _aggregate(df, x_col, y_col, agg_method)
+        result = {
+            "data": [{"name": str(r[x_col]), "value": float(r[y_col])} for _, r in grouped.iterrows()],
+            "data_count": len(grouped),
+        }
+        return result
     if chart_type == "scatter":
         points = df[[x_col, y_col]].dropna().values.tolist()
-        return {"data": points}
+        return {"data": points, "data_count": len(points)}
     return {"error": "unsupported chart type"}, 400
 
 

@@ -5,14 +5,21 @@
 {% block content %}
 <div class="page-header mb-4">
     <h2 class="fw-bold">数据可视化</h2>
-    <p class="text-muted mb-0">选择图表类型和字段后，图表会通过后端接口生成。</p>
+    <p class="text-muted mb-0">选择图表类型和字段，自定义图表参数，动态生成可视化图表。</p>
 </div>
 
 <div class="row g-4">
+    <!-- 左侧：图表配置 -->
     <div class="col-lg-4">
         <div class="card shadow-sm">
             <div class="card-header bg-white fw-semibold">图表配置</div>
             <div class="card-body">
+                <!-- 图表标题 -->
+                <div class="mb-3">
+                    <label class="form-label">图表标题</label>
+                    <input type="text" id="chartTitle" class="form-control" placeholder="留空则自动生成">
+                </div>
+                <!-- 图表类型 -->
                 <div class="mb-3">
                     <label class="form-label">图表类型</label>
                     <select id="chartType" class="form-select">
@@ -22,33 +29,69 @@
                         <option value="scatter">散点图</option>
                     </select>
                 </div>
+                <!-- X 轴 -->
                 <div class="mb-3">
-                    <label class="form-label">X 轴字段</label>
+                    <label class="form-label">X 轴字段（分组字段）</label>
                     <select id="xCol" class="form-select">
                         {% for col in all_cols %}
                         <option value="{{ col }}">{{ col }}</option>
                         {% endfor %}
                     </select>
                 </div>
+                <!-- Y 轴 -->
                 <div class="mb-3">
-                    <label class="form-label">Y 轴字段</label>
+                    <label class="form-label">Y 轴字段（数值字段）</label>
                     <select id="yCol" class="form-select">
                         {% for col in numeric_cols %}
                         <option value="{{ col }}">{{ col }}</option>
                         {% endfor %}
                     </select>
                 </div>
+                <!-- 聚合方式 -->
+                <div class="mb-3">
+                    <label class="form-label">聚合方式 <span class="text-muted small">（仅柱状图/折线图/饼图）</span></label>
+                    <select id="aggMethod" class="form-select">
+                        <option value="sum">求和 (Sum)</option>
+                        <option value="mean">均值 (Mean)</option>
+                        <option value="count">计数 (Count)</option>
+                    </select>
+                </div>
+                <!-- 颜色主题 -->
+                <div class="mb-3">
+                    <label class="form-label">颜色主题</label>
+                    <select id="colorTheme" class="form-select">
+                        <option value="default">默认配色</option>
+                        <option value="fresh">清新绿</option>
+                        <option value="dark">暗黑系</option>
+                        <option value="vintage">复古风</option>
+                    </select>
+                </div>
+                <!-- 显示数据标签 -->
+                <div class="mb-3 form-check">
+                    <input type="checkbox" id="showLabel" class="form-check-input">
+                    <label class="form-check-label" for="showLabel">显示数据标签</label>
+                </div>
+                <!-- 显示图例 -->
+                <div class="mb-3 form-check">
+                    <input type="checkbox" id="showLegend" class="form-check-input" checked>
+                    <label class="form-check-label" for="showLegend">显示图例</label>
+                </div>
+                <!-- 生成按钮 -->
                 <button id="drawChart" class="btn btn-primary w-100">生成图表</button>
             </div>
         </div>
     </div>
 
+    <!-- 右侧：图表展示 -->
     <div class="col-lg-8">
         <div class="card shadow-sm h-100">
-            <div class="card-header bg-white fw-semibold">图表展示</div>
+            <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+                <span>图表展示</span>
+                <small id="dataInfo" class="text-muted"></small>
+            </div>
             <div class="card-body">
                 <div id="chartBox" style="height: 460px;"></div>
-                <div class="empty-state text-center py-4 text-muted" id="chartTips">点击生成图表后这里会显示结果。</div>
+                <div class="empty-state text-center py-4 text-muted" id="chartTips">点击"生成图表"后这里会显示结果。</div>
             </div>
         </div>
     </div>
@@ -57,41 +100,101 @@
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 <script>
     const chart = echarts.init(document.getElementById('chartBox'));
+
+    // 颜色主题预设
+    const colorThemes = {
+        default: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4'],
+        fresh: ['#2ec4b6', '#e71d36', '#ff9f1c', '#011627', '#20a4f3', '#8ac926', '#ff595e', '#6a4c93'],
+        dark: ['#dd6b66', '#759aa0', '#e69d87', '#8dc1a9', '#ea7e53', '#eedd78', '#73a373', '#73b9bc'],
+        vintage: ['#d87c7c', '#919e8b', '#d7ab82', '#6e7074', '#61a0a8', '#efa18d', '#787464', '#cc7e63']
+    };
+
+    // 窗口自适应
+    window.addEventListener('resize', () => chart.resize());
+
     document.getElementById('drawChart').addEventListener('click', async () => {
         const chartType = document.getElementById('chartType').value;
         const xCol = document.getElementById('xCol').value;
         const yCol = document.getElementById('yCol').value;
-        const resp = await fetch('{{ url_for('chart_data') }}', {
+        const aggMethod = document.getElementById('aggMethod').value;
+        const chartTitle = document.getElementById('chartTitle').value.trim();
+        const colorTheme = document.getElementById('colorTheme').value;
+        const showLabel = document.getElementById('showLabel').checked;
+        const showLegend = document.getElementById('showLegend').checked;
+
+        // 请求后端
+        const resp = await fetch('{{ url_for("chart_data") }}', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({chart_type: chartType, x_col: xCol, y_col: yCol})
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chart_type: chartType,
+                x_col: xCol,
+                y_col: yCol,
+                agg_method: aggMethod
+            })
         });
         const data = await resp.json();
-        document.getElementById('chartTips').style.display = 'none';
+
         if (data.error) {
-            alert(data.error);
+            alert('错误：' + data.error);
             return;
         }
+
+        // 隐藏提示，显示图表
+        document.getElementById('chartTips').style.display = 'none';
+        document.getElementById('dataInfo').textContent = '数据条数：' + (data.data_count || 0);
+
+        // 标题文本
+        const titleText = chartTitle || (chartType === 'bar' ? '柱状图' :
+                                         chartType === 'line' ? '折线图' :
+                                         chartType === 'pie' ? '饼图' : '散点图');
+
+        // 构建 ECharts option
+        const colors = colorThemes[colorTheme] || colorThemes.default;
+        let option = {
+            color: colors,
+            title: { text: titleText, left: 'center', textStyle: { fontSize: 16 } },
+            tooltip: { trigger: chartType === 'pie' ? 'item' : 'axis' },
+            legend: { show: showLegend, bottom: 0 },
+            grid: { left: '3%', right: '4%', bottom: showLegend ? '10%' : '3%', containLabel: true }
+        };
+
         if (chartType === 'pie') {
-            chart.setOption({
-                tooltip: {trigger: 'item'},
-                series: [{type: 'pie', data: data.data}]
-            });
+            option.series = [{
+                type: 'pie',
+                data: data.data,
+                label: { show: showLabel, formatter: '{b}: {c}' },
+                radius: ['0%', '70%']
+            }];
         } else if (chartType === 'scatter') {
-            chart.setOption({
-                tooltip: {},
-                xAxis: {},
-                yAxis: {},
-                series: [{type: 'scatter', data: data.data}]
-            });
+            option.xAxis = {};
+            option.yAxis = {};
+            option.series = [{
+                type: 'scatter',
+                data: data.data,
+                symbolSize: 10,
+                label: { show: showLabel, formatter: '{c}', position: 'top' }
+            }];
         } else {
-            chart.setOption({
-                tooltip: {},
-                xAxis: {type: 'category', data: data.x},
-                yAxis: {type: 'value'},
-                series: [{type: chartType, data: data.y}]
-            });
+            // bar / line
+            option.xAxis = { type: 'category', data: data.x, axisLabel: { rotate: data.x && data.x.length > 8 ? 30 : 0 } };
+            option.yAxis = { type: 'value' };
+            option.series = [{
+                type: chartType,
+                data: data.y,
+                label: { show: showLabel, position: 'top' },
+                smooth: chartType === 'line'
+            }];
         }
+
+        chart.setOption(option, true);
     });
+
+    // 首次加载自动生成默认图表（如果有数据）
+    {% if numeric_cols and all_cols %}
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('drawChart').click();
+    });
+    {% endif %}
 </script>
 {% endblock %}
