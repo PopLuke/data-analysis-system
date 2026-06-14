@@ -5,48 +5,234 @@
 {% block content %}
 <div class="page-header mb-4">
     <h2 class="fw-bold">数据分析</h2>
-    <p class="text-muted mb-0">这里将支持 K-Means 聚类分析和线性回归预测等机器学习功能。</p>
+    <p class="text-muted mb-0">支持 K-Means 聚类、线性回归、随机森林分类和 PCA 降维分析。</p>
 </div>
 
 <div class="row g-4">
+    {# ── 左侧配置面板 ── #}
     <div class="col-lg-4">
         <div class="card shadow-sm">
             <div class="card-header bg-white fw-semibold">分析配置</div>
             <div class="card-body">
-                <form>
+                <form method="post" id="analysisForm">
+
                     <div class="mb-3">
-                        <label class="form-label">分析方法</label>
-                        <select class="form-select" disabled>
-                            <option>K-Means 聚类</option>
-                            <option>线性回归预测</option>
+                        <label class="form-label fw-semibold">分析方法</label>
+                        <select class="form-select" name="method" id="methodSelect">
+                            <option value="kmeans"    {% if selected_method == 'kmeans'         %}selected{% endif %}>K-Means 聚类</option>
+                            <option value="regression"{% if selected_method == 'regression'     %}selected{% endif %}>线性回归预测</option>
+                            <option value="classification" {% if selected_method == 'classification' %}selected{% endif %}>随机森林分类</option>
+                            <option value="pca"       {% if selected_method == 'pca'            %}selected{% endif %}>PCA 降维</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">选择数值字段</label>
-                        <select class="form-select" disabled>
-                            <option>等待数据加载</option>
-                        </select>
+
+                    {# K-Means 专属字段 #}
+                    <div id="section-kmeans">
+                        <div class="mb-3">
+                            <label class="form-label">聚类字段（Ctrl 多选）</label>
+                            <select class="form-select" name="columns" multiple size="5">
+                                {% for col in numeric_cols %}
+                                <option value="{{ col }}">{{ col }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">聚类数量 K</label>
+                            <input type="number" class="form-control" name="k" value="3" min="2" max="20">
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">聚类数量 K</label>
-                        <input type="number" class="form-control" value="3" min="2" disabled>
+
+                    {# 回归 / 分类 共享字段 #}
+                    <div id="section-supervised" style="display:none">
+                        <div class="mb-3">
+                            <label class="form-label">目标字段</label>
+                            <select class="form-select" name="target">
+                                <option value="">请选择</option>
+                                {% for col in numeric_cols %}
+                                <option value="{{ col }}">{{ col }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">特征字段（Ctrl 多选）</label>
+                            <select class="form-select" name="features" multiple size="5">
+                                {% for col in numeric_cols %}
+                                <option value="{{ col }}">{{ col }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
-                    <button type="button" class="btn btn-primary w-100" disabled>开始分析</button>
+
+                    {# PCA 无额外参数，自动用全部数值列 #}
+                    <div id="section-pca" style="display:none">
+                        <p class="text-muted small">PCA 将自动使用数据集中所有数值列进行降维。</p>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 mt-1">开始分析</button>
                 </form>
             </div>
         </div>
     </div>
 
+    {# ── 右侧结果面板 ── #}
     <div class="col-lg-8">
-        <div class="card shadow-sm h-100">
+        <div class="card shadow-sm">
             <div class="card-header bg-white fw-semibold">分析结果</div>
             <div class="card-body">
-                <div class="empty-state text-center py-5">
-                    <h5>暂无分析结果</h5>
-                    <p class="text-muted mb-0">分析模块接入后，将在这里展示聚类标签、模型指标和结果图表。</p>
+
+                {% if not result and not result_data %}
+                <div class="empty-state text-center py-5 text-muted">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-bar-chart-line mb-3 opacity-25" viewBox="0 0 16 16">
+                        <path d="M11 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12h.5a.5.5 0 0 1 0 1H.5a.5.5 0 0 1 0-1H1v-3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3h1V7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7h1V2z"/>
+                    </svg>
+                    <p class="mb-0">选择分析方法并点击「开始分析」后，结果将在这里展示。</p>
                 </div>
+                {% endif %}
+
+                {# K-Means 结果 #}
+                {% if result %}
+                <h6 class="fw-semibold mb-3">聚类结果（前 50 行）</h6>
+                <div class="table-responsive">{{ result|safe }}</div>
+                {% endif %}
+
+                {# 回归结果 #}
+                {% if result_data and result_data.type == 'regression' %}
+                <h6 class="fw-semibold mb-3">线性回归分析结果</h6>
+
+                <div class="row g-3 mb-4">
+                    {% for k, v in result_data.metrics.items() %}
+                    <div class="col-4">
+                        <div class="card text-center border-0 bg-light">
+                            <div class="card-body py-3">
+                                <p class="text-muted small mb-1">{{ k }}</p>
+                                <p class="fs-4 fw-bold mb-0">{{ v }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <h6 class="fw-semibold mb-2">特征系数</h6>
+                <table class="table table-sm table-bordered mb-4">
+                    <thead class="table-light"><tr><th>特征</th><th>系数</th></tr></thead>
+                    <tbody>
+                        {% for feat, coef in result_data.coef %}
+                        <tr><td>{{ feat }}</td><td>{{ coef }}</td></tr>
+                        {% endfor %}
+                        <tr class="table-secondary"><td><strong>截距</strong></td><td>{{ result_data.intercept }}</td></tr>
+                    </tbody>
+                </table>
+
+                <h6 class="fw-semibold mb-2">预测结果（测试集前 50 行）</h6>
+                <div class="table-responsive">{{ result_data.predictions_html|safe }}</div>
+                {% endif %}
+
+                {# 分类结果 #}
+                {% if result_data and result_data.type == 'classification' %}
+                <h6 class="fw-semibold mb-3">随机森林分类结果</h6>
+
+                <div class="row g-3 mb-4">
+                    {% for k, v in result_data.metrics.items() %}
+                    <div class="col-4">
+                        <div class="card text-center border-0 bg-light">
+                            <div class="card-body py-3">
+                                <p class="text-muted small mb-1">{{ k }}</p>
+                                <p class="fs-4 fw-bold mb-0">{{ v }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <h6 class="fw-semibold mb-2">分类报告</h6>
+                <div class="table-responsive mb-4">{{ result_data.report_html|safe }}</div>
+
+                <h6 class="fw-semibold mb-2">特征重要性（降序）</h6>
+                <table class="table table-sm table-bordered mb-4">
+                    <thead class="table-light"><tr><th>特征</th><th>重要性</th></tr></thead>
+                    <tbody>
+                        {% for feat, imp in result_data.feature_importance %}
+                        <tr>
+                            <td>{{ feat }}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-grow-1" style="height:8px">
+                                        <div class="progress-bar" style="width:{{ (imp * 100)|round|int }}%"></div>
+                                    </div>
+                                    <span class="text-muted small" style="min-width:40px">{{ imp }}</span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <h6 class="fw-semibold mb-2">预测结果（测试集前 50 行）</h6>
+                <div class="table-responsive">{{ result_data.predictions_html|safe }}</div>
+                {% endif %}
+
+                {# PCA 结果 #}
+                {% if result_data and result_data.type == 'pca' %}
+                <h6 class="fw-semibold mb-3">PCA 降维结果（共 {{ result_data.n_components }} 个主成分）</h6>
+
+                <h6 class="fw-semibold mb-2">各主成分方差解释率</h6>
+                <table class="table table-sm table-bordered mb-4">
+                    <thead class="table-light">
+                        <tr><th>主成分</th><th>方差解释率</th><th>累计解释率</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for i in range(result_data.n_components) %}
+                        <tr>
+                            <td>PC{{ i + 1 }}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-grow-1" style="height:8px">
+                                        <div class="progress-bar bg-info"
+                                             style="width:{{ (result_data.variance_ratio[i] * 100)|round|int }}%"></div>
+                                    </div>
+                                    <span class="text-muted small">{{ "%.1f"|format(result_data.variance_ratio[i] * 100) }}%</span>
+                                </div>
+                            </td>
+                            <td>{{ "%.1f"|format(result_data.cumulative[i] * 100) }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <h6 class="fw-semibold mb-2">主成分载荷矩阵</h6>
+                <div class="table-responsive mb-4">{{ result_data.components_html|safe }}</div>
+
+                <h6 class="fw-semibold mb-2">降维结果（前 2 个主成分，前 50 行）</h6>
+                <div class="table-responsive">{{ result_data.transformed_html|safe }}</div>
+                {% endif %}
+
             </div>
         </div>
     </div>
 </div>
+
+<script>
+(function () {
+    const methodSelect = document.getElementById('methodSelect');
+    const sections = {
+        kmeans:         document.getElementById('section-kmeans'),
+        regression:     document.getElementById('section-supervised'),
+        classification: document.getElementById('section-supervised'),
+        pca:            document.getElementById('section-pca'),
+    };
+
+    function updateSections() {
+        const v = methodSelect.value;
+        document.getElementById('section-kmeans').style.display     = 'none';
+        document.getElementById('section-supervised').style.display = 'none';
+        document.getElementById('section-pca').style.display        = 'none';
+        if (v === 'kmeans')                          document.getElementById('section-kmeans').style.display     = '';
+        else if (v === 'pca')                        document.getElementById('section-pca').style.display        = '';
+        else /* regression | classification */       document.getElementById('section-supervised').style.display = '';
+    }
+
+    methodSelect.addEventListener('change', updateSections);
+    updateSections();   // run on page load to reflect server-side selected method
+})();
+</script>
 {% endblock %}
